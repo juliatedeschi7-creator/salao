@@ -10,7 +10,7 @@ interface Salao {
   id: string
   nome: string
   dono_id: string
-  profiles: { nome: string }
+  profiles: { nome: string } | null
 }
 
 interface NotifEnviada {
@@ -18,7 +18,7 @@ interface NotifEnviada {
   titulo: string
   mensagem: string
   created_at: string
-  profiles: { nome: string }
+  profiles: { nome: string } | null
 }
 
 export default function AdminNotificacoesPage() {
@@ -26,7 +26,7 @@ export default function AdminNotificacoesPage() {
   const router = useRouter()
   const [saloes, setSaloes] = useState<Salao[]>([])
   const [enviadas, setEnviadas] = useState<NotifEnviada[]>([])
-  const [destinatario, setDestinatario] = useState<'todos' | string>('todos')
+  const [destinatario, setDestinatario] = useState<string>('todos')
   const [titulo, setTitulo] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -45,7 +45,16 @@ export default function AdminNotificacoesPage() {
       .eq('pausado', false)
       .eq('ativo', true)
       .order('nome')
-    setSaloes(data || [])
+
+    if (data) {
+      const saloesMapped: Salao[] = data.map((s: any) => ({
+        id: s.id,
+        nome: s.nome,
+        dono_id: s.dono_id,
+        profiles: Array.isArray(s.profiles) ? s.profiles[0] ?? null : s.profiles ?? null,
+      }))
+      setSaloes(saloesMapped)
+    }
   }
 
   async function carregarEnviadas() {
@@ -55,7 +64,17 @@ export default function AdminNotificacoesPage() {
       .eq('remetente_id', profile?.id)
       .order('created_at', { ascending: false })
       .limit(30)
-    setEnviadas(data || [])
+
+    if (data) {
+      const mapped: NotifEnviada[] = data.map((n: any) => ({
+        id: n.id,
+        titulo: n.titulo,
+        mensagem: n.mensagem,
+        created_at: n.created_at,
+        profiles: Array.isArray(n.profiles) ? n.profiles[0] ?? null : n.profiles ?? null,
+      }))
+      setEnviadas(mapped)
+    }
   }
 
   async function enviarNotificacao() {
@@ -104,7 +123,6 @@ export default function AdminNotificacoesPage() {
         <h1 className="font-bold text-gray-900 text-lg">Notificações</h1>
       </div>
 
-      {/* Abas */}
       <div className="flex bg-white border-b border-gray-100">
         {(['enviar', 'historico'] as const).map(a => (
           <button key={a} onClick={() => setAba(a)}
@@ -136,7 +154,7 @@ export default function AdminNotificacoesPage() {
                   <option value="todos">Todos os salões ativos ({saloes.length})</option>
                   {saloes.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.nome} — {s.profiles?.nome}
+                      {s.nome} — {s.profiles?.nome || 'sem dono'}
                     </option>
                   ))}
                 </select>
@@ -182,7 +200,9 @@ export default function AdminNotificacoesPage() {
                     </p>
                   </div>
                   <p className="text-sm text-gray-500">{n.mensagem}</p>
-                  <p className="text-xs text-[#E91E8C]">Para: {n.profiles?.nome || 'Todos'}</p>
+                  <p className="text-xs text-[#E91E8C]">
+                    Para: {n.profiles?.nome || 'Todos'}
+                  </p>
                 </div>
               ))
             )}
