@@ -27,11 +27,7 @@ export default function CriarSalaoPage() {
   const [corSecundaria, setCorSecundaria] = useState('#FCE4F3')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
-
-  function selecionarCor(cor: typeof CORES_PRESET[0]) {
-    setCorPrimaria(cor.primaria)
-    setCorSecundaria(cor.secundaria)
-  }
+  const [enviado, setEnviado] = useState(false)
 
   function gerarSlug(nome: string) {
     return nome.toLowerCase()
@@ -64,6 +60,7 @@ export default function CriarSalaoPage() {
         cor_secundaria: corSecundaria,
         ativo: true,
         pausado: false,
+        aprovado: false,
       })
       .select()
       .single()
@@ -77,11 +74,36 @@ export default function CriarSalaoPage() {
     await supabase.from('profiles').update({
       nome: nomeDono,
       salao_id: salao.id,
-      aprovado: true,
     }).eq('id', profile?.id)
 
-    window.location.href = '/salao'
+    setSalvando(false)
+    setEnviado(true)
   }
+
+  if (enviado) return (
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6 gap-6 text-center">
+      <div className="w-20 h-20 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: corSecundaria }}>
+        <Scissors size={36} style={{ color: corPrimaria }} />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900">Salão cadastrado! 🎉</h2>
+      <p className="text-gray-500">
+        Seu salão foi enviado para análise. Você receberá uma notificação assim que for aprovado pelo administrador.
+      </p>
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl px-5 py-4 w-full">
+        <p className="text-blue-700 text-sm font-medium">
+          ⏳ Aguardando aprovação
+        </p>
+        <p className="text-blue-500 text-xs mt-1">
+          Normalmente aprovamos em até 24 horas.
+        </p>
+      </div>
+      <button onClick={() => window.location.href = '/login'}
+        className="btn-primary" style={{ backgroundColor: corPrimaria }}>
+        Voltar para o login
+      </button>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -107,9 +129,9 @@ export default function CriarSalaoPage() {
 
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-            Seu nome (dono) <span className="text-red-400">*</span>
+            Seu nome <span className="text-red-400">*</span>
           </label>
-          <input className="input-field" placeholder="Seu nome completo"
+          <input className="input-field" placeholder="Nome completo do dono"
             value={nomeDono} onChange={e => setNomeDono(e.target.value)} />
         </div>
 
@@ -146,7 +168,6 @@ export default function CriarSalaoPage() {
           </div>
         </div>
 
-        {/* Paleta de cores */}
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-2">
             <Palette size={16} />
@@ -154,7 +175,10 @@ export default function CriarSalaoPage() {
           </label>
           <div className="grid grid-cols-4 gap-3 mt-2">
             {CORES_PRESET.map(cor => (
-              <button key={cor.primaria} onClick={() => selecionarCor(cor)}
+              <button key={cor.primaria} onClick={() => {
+                setCorPrimaria(cor.primaria)
+                setCorSecundaria(cor.secundaria)
+              }}
                 className="flex flex-col items-center gap-1">
                 <div
                   className={`w-12 h-12 rounded-full border-4 transition-all ${corPrimaria === cor.primaria ? 'border-gray-800 scale-110' : 'border-transparent'}`}
@@ -183,7 +207,7 @@ export default function CriarSalaoPage() {
           style={{ backgroundColor: corPrimaria }}>
           {salvando
             ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : '✨ Criar meu Salão'}
+            : '✨ Enviar para aprovação'}
         </button>
       </div>
     </div>
