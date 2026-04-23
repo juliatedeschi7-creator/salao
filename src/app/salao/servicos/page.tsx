@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Plus, Scissors, Edit2, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Scissors, Edit2, Trash2, Image } from 'lucide-react'
 import BottomNav from '@/components/BottomNav'
 import { Home, Calendar, Users, BarChart2, Settings } from 'lucide-react'
 
@@ -117,7 +117,6 @@ export default function ServicosPage() {
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-3">
-        {/* Filtro categorias */}
         <div className="flex gap-2 overflow-x-auto pb-1">
           {categorias.map(c => (
             <button key={c} onClick={() => setCategoriaFiltro(c)}
@@ -163,6 +162,10 @@ export default function ServicosPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <button onClick={() => router.push(`/salao/servicos/fotos?servico=${s.id}`)}
+                    className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Image size={14} className="text-gray-500" />
+                  </button>
                   <button onClick={() => abrirModal(s)}
                     className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
                     <Edit2 size={14} className="text-gray-500" />
@@ -178,7 +181,6 @@ export default function ServicosPage() {
         )}
       </div>
 
-      {/* Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-end">
           <div className="bg-white w-full rounded-t-3xl p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto">
