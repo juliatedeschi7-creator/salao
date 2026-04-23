@@ -72,7 +72,6 @@ export default function ClientePage() {
 
   return (
     <div className="min-h-screen bg-[#f8f4f6] pb-20">
-      {/* Header */}
       <div className="px-4 py-5 flex items-center justify-between"
         style={{ backgroundColor: cor }}>
         <div>
@@ -95,7 +94,6 @@ export default function ClientePage() {
       </div>
 
       <div className="px-4 py-4 flex flex-col gap-4">
-        {/* Próximo agendamento */}
         {proximoAg ? (
           <div className="card border-l-4" style={{ borderColor: cor }}>
             <p className="text-xs font-medium text-gray-400 mb-1">Próximo agendamento</p>
@@ -128,7 +126,6 @@ export default function ClientePage() {
           </div>
         )}
 
-        {/* Pacotes ativos */}
         {pacotesAtivos.length > 0 && (
           <>
             <h2 className="font-bold text-gray-900">Meus Pacotes</h2>
@@ -158,17 +155,17 @@ export default function ClientePage() {
           </>
         )}
 
-        {/* Serviços do salão */}
         <h2 className="font-bold text-gray-900">Serviços</h2>
-        <button onClick={() => router.push('/cliente/agendamentos')}
+
+        <button onClick={() => router.push('/cliente/servicos')}
           className="card flex items-center gap-3 active:scale-95 transition-all">
           <div className="w-11 h-11 rounded-full flex items-center justify-center"
             style={{ backgroundColor: corSec }}>
             <Scissors size={20} style={{ color: cor }} />
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-gray-900">Ver horários disponíveis</p>
-            <p className="text-sm text-gray-400">Solicite um agendamento</p>
+            <p className="font-semibold text-gray-900">Ver serviços do salão</p>
+            <p className="text-sm text-gray-400">Fotos, depoimentos e agendamento</p>
           </div>
           <span className="text-gray-300">›</span>
         </button>
