@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Send, Bell } from 'lucide-react'
+import { ArrowLeft, Send, Bell, Clock, ChevronRight } from 'lucide-react'
 
 export default function NotificacoesSalaoPage() {
   const { profile, loading } = useAuth()
@@ -28,7 +28,8 @@ export default function NotificacoesSalaoPage() {
       .eq('id', profile!.salao_id!).single()
     setSalao(sal)
 
-    const { data: clis } = await supabase.from('clientes').select('*, profiles(id)')
+    const { data: clis } = await supabase.from('clientes')
+      .select('*, profiles(id)')
       .eq('salao_id', profile!.salao_id!).order('nome')
     setClientes(clis || [])
 
@@ -89,10 +90,26 @@ export default function NotificacoesSalaoPage() {
         <button onClick={() => router.back()}>
           <ArrowLeft size={22} className="text-gray-700" />
         </button>
-        <h1 className="font-bold text-gray-900 text-lg">Notificações</h1>
+        <h1 className="font-bold text-gray-900 text-lg flex-1">Notificações</h1>
       </div>
 
-      <div className="flex bg-white border-b border-gray-100">
+      {/* Link lembretes */}
+      <div className="px-4 pt-4">
+        <button onClick={() => router.push('/salao/notificacoes/lembretes')}
+          className="w-full card flex items-center gap-3 mb-1 active:scale-95 transition-all">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: salao?.cor_secundaria || '#FCE4F3' }}>
+            <Clock size={18} style={{ color: cor }} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-semibold text-gray-900 text-sm">Lembretes de agendamento</p>
+            <p className="text-xs text-gray-400">Automáticos 24h e 2h antes</p>
+          </div>
+          <ChevronRight size={18} className="text-gray-300" />
+        </button>
+      </div>
+
+      <div className="flex bg-white border-b border-gray-100 mt-3">
         {(['enviar', 'historico'] as const).map(a => (
           <button key={a} onClick={() => setAba(a)}
             className={`flex-1 py-3 text-sm font-medium transition-all ${aba === a ? 'border-b-2' : 'text-gray-400'}`}
@@ -114,7 +131,9 @@ export default function NotificacoesSalaoPage() {
             )}
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Destinatário</label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+                Destinatário
+              </label>
               <select className="input-field" value={destinatario}
                 onChange={e => setDestinatario(e.target.value)}>
                 <option value="todos">
