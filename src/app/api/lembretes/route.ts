@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
 const supabase = createClient(
-  process.env.https://uhsvfbebjfeedpeznjnf.supabase.co!,
-  process.env.eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoc3ZmYmViamZlZWRwZXpuam5mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY2NDQ5MDUsImV4cCI6MjA5MjIyMDkwNX0.bBdB4l9mEw9jXlYVHEZ5tvaJIBYdjxtf6637QrUxjbw!
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function GET() {
