@@ -24,14 +24,21 @@ type Agendamento = {
   saloes: Salao[] | null
 }
 
-// Supabase client (server)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
 export async function GET() {
   try {
+    // 🔐 ENV (corrigido)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { ok: false, erro: 'Variáveis do Supabase não configuradas' },
+        { status: 500 }
+      )
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     const agora = new Date()
 
     const em24h = new Date(agora.getTime() + 24 * 60 * 60 * 1000)
@@ -40,7 +47,9 @@ export async function GET() {
     const em2h = new Date(agora.getTime() + 2 * 60 * 60 * 1000)
     const em2hFim = new Date(em2h.getTime() + 60 * 60 * 1000)
 
-    // ===== 24h =====
+    // ======================
+    // 🔔 Lembretes 24h
+    // ======================
     const { data: ags24h } = await supabase
       .from('agendamentos')
       .select(`
@@ -82,7 +91,9 @@ export async function GET() {
       })
     }
 
-    // ===== 2h =====
+    // ======================
+    // 🔔 Lembretes 2h
+    // ======================
     const { data: ags2h } = await supabase
       .from('agendamentos')
       .select(`
