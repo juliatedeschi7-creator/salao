@@ -17,42 +17,46 @@ type Agrupamento = Record<string, number>
 // Página
 // ======================
 export default function RelatoriosPage() {
-  // 🔹 Substitua depois pelos dados reais (Supabase, etc.)
+  // 🔹 depois você troca por dados reais
   const receitas: Receita[] = []
 
   // ======================
   // 📊 Agrupar por categoria
   // ======================
   const receitasPorCategoria = useMemo<Agrupamento>(() => {
-    return receitas.reduce((acc, item) => {
+    return receitas.reduce<Agrupamento>((acc, item) => {
       const chave = item.categoria ?? 'Sem categoria'
       acc[chave] = (acc[chave] ?? 0) + item.valor
       return acc
-    }, {} as Agrupamento)
+    }, {})
   }, [receitas])
 
   // ======================
   // 👩‍💼 Agrupar por profissional
   // ======================
   const receitasPorProfissional = useMemo<Agrupamento>(() => {
-    return receitas.reduce((acc, item) => {
+    return receitas.reduce<Agrupamento>((acc, item) => {
       const chave = item.profissional ?? 'Sem profissional'
       acc[chave] = (acc[chave] ?? 0) + item.valor
       return acc
-    }, {} as Agrupamento)
+    }, {})
   }, [receitas])
 
   // ======================
-  // 💰 Totais (CORRIGIDO 100%)
+  // 💰 Totais (CORRIGIDO)
   // ======================
   const totalRec = useMemo(() => {
-    const valores: number[] = Object.values(receitasPorCategoria)
-    return valores.reduce((a, b) => a + b, 0) || 1
+    return Object.values(receitasPorCategoria).reduce<number>(
+      (acc, val) => acc + val,
+      0
+    )
   }, [receitasPorCategoria])
 
   const totalProf = useMemo(() => {
-    const valores: number[] = Object.values(receitasPorProfissional)
-    return valores.reduce((a, b) => a + b, 0) || 1
+    return Object.values(receitasPorProfissional).reduce<number>(
+      (acc, val) => acc + val,
+      0
+    )
   }, [receitasPorProfissional])
 
   // ======================
@@ -69,9 +73,7 @@ export default function RelatoriosPage() {
 
       <p>Período: {periodoLabel}</p>
 
-      {/* ====================== */}
-      {/* 📊 Categorias */}
-      {/* ====================== */}
+      {/* Categorias */}
       <h2>Receitas por Categoria</h2>
       <ul>
         {Object.entries(receitasPorCategoria).map(([categoria, valor]) => (
@@ -85,9 +87,7 @@ export default function RelatoriosPage() {
         <strong>Total:</strong> R$ {totalRec.toFixed(2)}
       </p>
 
-      {/* ====================== */}
-      {/* 👩‍💼 Profissionais */}
-      {/* ====================== */}
+      {/* Profissionais */}
       <h2>Receitas por Profissional</h2>
       <ul>
         {Object.entries(receitasPorProfissional).map(
