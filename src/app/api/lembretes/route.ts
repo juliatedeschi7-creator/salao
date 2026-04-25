@@ -1,101 +1,142 @@
-'use client'
-
-import { useMemo } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
 
 // Tipos
-type Receita = {
-  valor: number
-  categoria: string | null
-  profissional: string | null
+type Cliente = {
+  nome: string | null
+  profile_id: string | null
 }
 
-type Agrupamento = Record<string, number>
+type Servico = {
+  nome: string | null
+}
 
-export default function RelatoriosPage() {
-  // 🔹 Substitua isso pelos seus dados reais (ex: vindo do Supabase)
-  const receitas: Receita[] = []
+type Salao = {
+  nome: string | null
+}
 
-  // =========================
-  // 📊 Agrupar por categoria
-  // =========================
-  const receitasPorCategoria: Agrupamento = useMemo(() => {
-    return receitas.reduce<Agrupamento>((acc, item) => {
-      const chave = item.categoria ?? 'Sem categoria'
-      acc[chave] = (acc[chave] ?? 0) + item.valor
-      return acc
-    }, {})
-  }, [receitas])
+type Agendamento = {
+  id: string
+  salao_id: string
+  data_hora: string
+  clientes: Cliente[] | null
+  servicos: Servico[] | null
+  saloes: Salao[] | null
+}
 
-  // =========================
-  // 👩‍💼 Agrupar por profissional
-  // =========================
-  const receitasPorProfissional: Agrupamento = useMemo(() => {
-    return receitas.reduce<Agrupamento>((acc, item) => {
-      const chave = item.profissional ?? 'Sem profissional'
-      acc[chave] = (acc[chave] ?? 0) + item.valor
-      return acc
-    }, {})
-  }, [receitas])
+// Supabase client (server)
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
-  // =========================
-  // 💰 Totais (CORRIGIDO)
-  // =========================
-  const totalRec =
-    Object.values(receitasPorCategoria).reduce(
-      (a: number, b: number) => a + b,
-      0
-    ) || 1
+export async function GET() {
+  try {
+    const agora = new Date()
 
-  const totalProf =
-    Object.values(receitasPorProfissional).reduce(
-      (a: number, b: number) => a + b,
-      0
-    ) || 1
+    const em24h = new Date(agora.getTime() + 24 * 60 * 60 * 1000)
+    const em24hFim = new Date(em24h.getTime() + 60 * 60 * 1000)
 
-  // =========================
-  // 📅 Label de período (exemplo)
-  // =========================
-  const periodoLabel = 'Este mês'
+    const em2h = new Date(agora.getTime() + 2 * 60 * 60 * 1000)
+    const em2hFim = new Date(em2h.getTime() + 60 * 60 * 1000)
 
-  return (
-    <div style={{ padding: 24 }}>
-      <h1>Relatórios Financeiros</h1>
+    // ===== 24h =====
+    const { data: ags24h } = await supabase
+      .from('agendamentos')
+      .select(`
+        id,
+        salao_id,
+        data_hora,
+        clientes ( nome, profile_id ),
+        servicos ( nome ),
+        saloes ( nome )
+      `)
+      .eq('status', 'confirmado')
+      .gte('data_hora', em24h.toISOString())
+      .lte('data_hora', em24hFim.toISOString())
 
-      <p>Período: {periodoLabel}</p>
+    const lista24h = (ags24h ?? []) as Agendamento[]
 
-      {/* ========================= */}
-      {/* 📊 Categorias */}
-      {/* ========================= */}
-      <h2>Receitas por Categoria</h2>
-      <ul>
-        {Object.entries(receitasPorCategoria).map(([categoria, valor]) => (
-          <li key={categoria}>
-            {categoria}: R$ {valor.toFixed(2)}
-          </li>
-        ))}
-      </ul>
+    for (const ag of lista24h) {
+      const cliente = ag.clientes?.[0]
+      const servico = ag.servicos?.[0]
+      const salao = ag.saloes?.[0]
 
-      <p>
-        <strong>Total:</strong> R$ {totalRec.toFixed(2)}
-      </p>
+      const clienteProfileId = cliente?.profile_id
+      if (!clienteProfileId) continue
 
-      {/* ========================= */}
-      {/* 👩‍💼 Profissionais */}
-      {/* ========================= */}
-      <h2>Receitas por Profissional</h2>
-      <ul>
-        {Object.entries(receitasPorProfissional).map(
-          ([profissional, valor]) => (
-            <li key={profissional}>
-              {profissional}: R$ {valor.toFixed(2)}
-            </li>
-          )
-        )}
-      </ul>
+      const dataHora = new Date(ag.data_hora)
 
-      <p>
-        <strong>Total:</strong> R$ {totalProf.toFixed(2)}
-      </p>
-    </div>
-  )
+      await supabase.from('notificacoes').insert({
+        salao_id: ag.salao_id,
+        remetente_id: null,
+        destinatario_id: clienteProfileId,
+        titulo: '⏰ Lembrete de agendamento',
+        mensagem: `Olá ${cliente?.nome ?? ''}! Você tem ${
+          servico?.nome ?? ''
+        } amanhã às ${dataHora.toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })} no ${salao?.nome ?? ''}.`,
+        tipo: 'lembrete',
+      })
+    }
+
+    // ===== 2h =====
+    const { data: ags2h } = await supabase
+      .from('agendamentos')
+      .select(`
+        id,
+        salao_id,
+        data_hora,
+        clientes ( nome, profile_id ),
+        servicos ( nome ),
+        saloes ( nome )
+      `)
+      .eq('status', 'confirmado')
+      .gte('data_hora', em2h.toISOString())
+      .lte('data_hora', em2hFim.toISOString())
+
+    const lista2h = (ags2h ?? []) as Agendamento[]
+
+    for (const ag of lista2h) {
+      const cliente = ag.clientes?.[0]
+      const servico = ag.servicos?.[0]
+      const salao = ag.saloes?.[0]
+
+      const clienteProfileId = cliente?.profile_id
+      if (!clienteProfileId) continue
+
+      const dataHora = new Date(ag.data_hora)
+
+      await supabase.from('notificacoes').insert({
+        salao_id: ag.salao_id,
+        remetente_id: null,
+        destinatario_id: clienteProfileId,
+        titulo: '🔔 Seu horário é em breve!',
+        mensagem: `Lembrete: ${servico?.nome ?? ''} em 2 horas (${dataHora.toLocaleTimeString(
+          'pt-BR',
+          {
+            hour: '2-digit',
+            minute: '2-digit',
+          }
+        )}) no ${salao?.nome ?? ''}. Te esperamos! 💕`,
+        tipo: 'lembrete',
+      })
+    }
+
+    return NextResponse.json({
+      ok: true,
+      lembretes24h: lista24h.length,
+      lembretes2h: lista2h.length,
+    })
+  } catch (err) {
+    return NextResponse.json(
+      {
+        ok: false,
+        erro: err instanceof Error ? err.message : String(err),
+      },
+      { status: 500 }
+    )
+  }
 }
