@@ -1,44 +1,31 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/hooks/useAuth'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, PauseCircle, PlayCircle, Search, CheckCircle, Clock } from 'lucide-react'
-import { Suspense } from 'react'
-
-interface Salao {
-  id: string
-  nome: string
-  cidade: string
-  dono_id: string
-  ativo: boolean
-  pausado: boolean
-  aprovado: boolean
-  motivo_pausa: string
-  created_at: string
-  profiles: { nome: string; email: string } | null
-}
+import { ArrowLeft, PauseCircle, PlayCircle, Search, CheckCircle } from 'lucide-react'
 
 function SaloesContent() {
   const { profile, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const filtroParam = searchParams.get('filtro')
-
-  const [saloes, setSaloes] = useState<Salao[]>([])
+  const [saloes, setSaloes] = useState<any[]>([])
   const [busca, setBusca] = useState('')
-  const [filtro, setFiltro] = useState<'todos' | 'ativos' | 'pausados' | 'pendentes'>(
-    (filtroParam as any) || 'todos'
-  )
-  const [modalPausa, setModalPausa] = useState<Salao | null>(null)
+  const [filtro, setFiltro] = useState(searchParams.get('filtro') || 'todos')
+  const [modalPausa, setModalPausa] = useState<any>(null)
   const [motivo, setMotivo] = useState('')
   const [salvando, setSalvando] = useState(false)
 
   useEffect(() => {
-    if (!loading && profile?.role !== 'admin_geral') router.push('/login')
-    else if (!loading) carregarSaloes()
-  }, [loading])
+    if (!loading) {
+      if (profile?.role !== 'admin_geral') {
+        router.push('/login')
+        return
+      }
+      carregarSaloes()
+    }
+  }, [loading, profile])
 
   async function carregarSaloes() {
     const { data } = await supabase
@@ -47,75 +34,61 @@ function SaloesContent() {
       .order('created_at', { ascending: false })
 
     if (data) {
-      const mapped: Salao[] = data.map((s: any) => ({
+      setSaloes(data.map((s: any) => ({
         ...s,
-        profiles: Array.isArray(s.profiles)
-          ? s.profiles[0] ?? null
-          : s.profiles ?? null,
-      }))
-      setSaloes(mapped)
+        profiles: Array.isArray(s.profiles) ? s.profiles[0] ?? null : s.profiles ?? null,
+      })))
     }
   }
 
-  async function aprovarSalao(salao: Salao) {
+  async function aprovar(salao: any) {
     setSalvando(true)
-    await supabase.from('saloes').update({
-      aprovado: true, ativo: true
-    }).eq('id', salao.id)
-
+    await supabase.from('saloes').update({ aprovado: true, ativo: true }).eq('id', salao.id)
     await supabase.from('notificacoes').insert({
       salao_id: salao.id,
       remetente_id: profile?.id,
       destinatario_id: salao.dono_id,
       titulo: '🎉 Salão aprovado!',
-      mensagem: `Parabéns! Seu salão "${salao.nome}" foi aprovado. Você já pode acessar todas as funcionalidades.`,
+      mensagem: `Seu salão "${salao.nome}" foi aprovado! Você já pode acessar todas as funcionalidades.`,
       tipo: 'admin'
     })
-
     setSalvando(false)
     carregarSaloes()
   }
 
-  async function pausarSalao(salao: Salao) {
+  async function pausar(salao: any) {
+    if (!motivo) return
     setSalvando(true)
-    await supabase.from('saloes').update({
-      pausado: true, motivo_pausa: motivo
-    }).eq('id', salao.id)
-
+    await supabase.from('saloes').update({ pausado: true, motivo_pausa: motivo }).eq('id', salao.id)
     await supabase.from('notificacoes').insert({
       salao_id: salao.id,
       remetente_id: profile?.id,
       destinatario_id: salao.dono_id,
       titulo: 'Salão pausado',
-      mensagem: `Seu salão foi pausado pelo administrador. Motivo: ${motivo}`,
+      mensagem: `Seu salão foi pausado. Motivo: ${motivo}`,
       tipo: 'admin'
     })
-
     setModalPausa(null)
     setMotivo('')
     setSalvando(false)
     carregarSaloes()
   }
 
-  async function reativarSalao(salao: Salao) {
-    await supabase.from('saloes').update({
-      pausado: false, motivo_pausa: null
-    }).eq('id', salao.id)
-
+  async function reativar(salao: any) {
+    await supabase.from('saloes').update({ pausado: false, motivo_pausa: null }).eq('id', salao.id)
     await supabase.from('notificacoes').insert({
       salao_id: salao.id,
       remetente_id: profile?.id,
       destinatario_id: salao.dono_id,
       titulo: 'Salão reativado',
-      mensagem: 'Seu salão foi reativado pelo administrador. Você já pode acessar normalmente.',
+      mensagem: 'Seu salão foi reativado! Você já pode acessar normalmente.',
       tipo: 'admin'
     })
-
     carregarSaloes()
   }
 
   const saloesFiltrados = saloes.filter(s => {
-    const matchBusca = s.nome.toLowerCase().includes(busca.toLowerCase()) ||
+    const matchBusca = s.nome?.toLowerCase().includes(busca.toLowerCase()) ||
       s.cidade?.toLowerCase().includes(busca.toLowerCase())
     const matchFiltro =
       filtro === 'todos' ? true :
@@ -131,6 +104,12 @@ function SaloesContent() {
     pausados: saloes.filter(s => s.pausado).length,
     pendentes: saloes.filter(s => !s.aprovado).length,
   }
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="w-8 h-8 border-4 border-[#E91E8C] border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-[#f8f4f6]">
@@ -197,16 +176,14 @@ function SaloesContent() {
                     Cadastro: {new Date(salao.created_at).toLocaleDateString('pt-BR')}
                   </p>
                   {salao.pausado && salao.motivo_pausa && (
-                    <p className="text-xs text-yellow-600 mt-1">
-                      Motivo: {salao.motivo_pausa}
-                    </p>
+                    <p className="text-xs text-yellow-600 mt-1">Motivo: {salao.motivo_pausa}</p>
                   )}
                 </div>
               </div>
 
               <div className="flex gap-2">
                 {!salao.aprovado && (
-                  <button onClick={() => aprovarSalao(salao)} disabled={salvando}
+                  <button onClick={() => aprovar(salao)} disabled={salvando}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-600 font-medium text-sm">
                     <CheckCircle size={16} />Aprovar
                   </button>
@@ -218,7 +195,7 @@ function SaloesContent() {
                   </button>
                 )}
                 {salao.pausado && (
-                  <button onClick={() => reativarSalao(salao)}
+                  <button onClick={() => reativar(salao)}
                     className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-50 text-green-600 font-medium text-sm">
                     <PlayCircle size={16} />Reativar
                   </button>
@@ -235,12 +212,10 @@ function SaloesContent() {
             <h3 className="font-bold text-gray-900 text-lg">Pausar salão</h3>
             <p className="text-gray-500 text-sm">
               O dono <strong>{modalPausa.profiles?.nome}</strong> não conseguirá
-              acessar o sistema enquanto pausado.
+              acessar enquanto pausado.
             </p>
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-1.5 block">
-                Motivo da pausa
-              </label>
+              <label className="text-sm font-medium text-gray-700 mb-1.5 block">Motivo</label>
               <textarea className="input-field resize-none" rows={3}
                 placeholder="Ex: Pagamento em atraso..."
                 value={motivo} onChange={e => setMotivo(e.target.value)} />
@@ -250,10 +225,10 @@ function SaloesContent() {
                 className="flex-1 py-3 rounded-2xl border border-gray-200 text-gray-600 font-medium">
                 Cancelar
               </button>
-              <button onClick={() => pausarSalao(modalPausa)}
+              <button onClick={() => pausar(modalPausa)}
                 disabled={!motivo || salvando}
                 className="flex-1 py-3 rounded-2xl bg-yellow-500 text-white font-medium disabled:opacity-50">
-                {salvando ? 'Pausando...' : 'Confirmar Pausa'}
+                {salvando ? 'Pausando...' : 'Confirmar'}
               </button>
             </div>
           </div>
@@ -274,4 +249,3 @@ export default function AdminSaloesPage() {
     </Suspense>
   )
 }
-
