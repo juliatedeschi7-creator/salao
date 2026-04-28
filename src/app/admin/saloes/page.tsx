@@ -17,15 +17,15 @@ function SaloesContent() {
   const [motivo, setMotivo] = useState('')
   const [salvando, setSalvando] = useState(false)
 
-  useEffect(() => {
-    if (!loading) {
-      if (profile?.role !== 'admin_geral') {
-        router.push('/login')
-        return
-      }
-      carregarSaloes()
-    }
-  }, [loading, profile])
+useEffect(() => {
+  if (loading) return
+  if (!profile) return // aguarda perfil carregar
+  if (profile.role !== 'admin_geral') {
+    router.push('/login')
+    return
+  }
+  carregarSaloes()
+}, [loading, profile])
 
   async function carregarSaloes() {
     const { data } = await supabase
