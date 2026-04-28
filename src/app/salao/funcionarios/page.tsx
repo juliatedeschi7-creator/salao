@@ -57,12 +57,13 @@ export default function FuncionariosPage() {
     if (data) carregarDados()
   }
 
-  function copiarLink(token: string) {
-    const link = `https://salao-flame.vercel.app/cadastro?token=${token}`
-    navigator.clipboard.writeText(link)
-    setCopiado(true)
-    setTimeout(() => setCopiado(false), 2000)
-  }
+function copiarLink(token: string) {
+  const baseUrl = window.location.origin
+  const link = `${baseUrl}/cadastro?token=${token}`
+  navigator.clipboard.writeText(link)
+  setCopiado(true)
+  setTimeout(() => setCopiado(false), 2000)
+}
 
   function abrirConfig(func: any) {
     setModalConfig(func)
