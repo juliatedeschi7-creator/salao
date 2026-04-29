@@ -23,7 +23,6 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      // 🔐 Login
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -31,7 +30,6 @@ export default function LoginPage() {
 
       if (error) {
         setErro('Email ou senha inválidos')
-        setLoading(false)
         return
       }
 
@@ -39,11 +37,9 @@ export default function LoginPage() {
 
       if (!user) {
         setErro('Erro ao obter usuário')
-        setLoading(false)
         return
       }
 
-      // 🔎 Buscar perfil
       const { data: perfil, error: erroPerfil } = await supabase
         .from('profiles')
         .select('*')
@@ -52,18 +48,14 @@ export default function LoginPage() {
 
       if (erroPerfil || !perfil) {
         setErro('Perfil não encontrado')
-        setLoading(false)
         return
       }
 
-      // ⏳ Aguardando aprovação
       if (!perfil.aprovado) {
         setErro('Seu cadastro está aguardando aprovação')
-        setLoading(false)
         return
       }
 
-      // ✅ Usuário aprovado → entra
       router.push('/salao')
 
     } catch (err) {
@@ -74,35 +66,113 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '0 auto', padding: 24 }}>
-      <h1>Entrar</h1>
-
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #f5f5f5, #eaeaea)'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 380,
+        background: '#fff',
+        padding: 28,
+        borderRadius: 16,
+        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
+      }}>
         
-        <input
-          type="email"
-          placeholder="Seu email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <h1 style={{
+          textAlign: 'center',
+          marginBottom: 8
+        }}>
+          Entrar
+        </h1>
 
-        <input
-          type="password"
-          placeholder="Sua senha"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <p style={{
+          textAlign: 'center',
+          color: '#666',
+          marginBottom: 20,
+          fontSize: 14
+        }}>
+          Acesse sua conta do salão
+        </p>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
+        <form
+          onSubmit={handleLogin}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14
+          }}
+        >
+          <input
+            type="email"
+            placeholder="Seu email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: '1px solid #ddd',
+              fontSize: 14
+            }}
+          />
 
-        {erro && (
-          <p style={{ color: 'red' }}>{erro}</p>
-        )}
-      </form>
+          <input
+            type="password"
+            placeholder="Sua senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: '1px solid #ddd',
+              fontSize: 14
+            }}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              padding: 12,
+              borderRadius: 10,
+              border: 'none',
+              background: '#000',
+              color: '#fff',
+              fontWeight: 600,
+              cursor: 'pointer',
+              marginTop: 6
+            }}
+          >
+            {loading ? 'Entrando...' : 'Entrar'}
+          </button>
+
+          {erro && (
+            <p style={{
+              color: 'red',
+              textAlign: 'center',
+              fontSize: 13
+            }}>
+              {erro}
+            </p>
+          )}
+        </form>
+
+        <p style={{
+          textAlign: 'center',
+          marginTop: 18,
+          fontSize: 14
+        }}>
+          Não tem conta?{' '}
+          <a href="/cadastro" style={{ color: '#000', fontWeight: 600 }}>
+            Criar conta
+          </a>
+        </p>
+      </div>
     </div>
   )
 }
