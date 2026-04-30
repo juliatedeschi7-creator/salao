@@ -20,7 +20,7 @@ export default function CadastroPage() {
   async function handleCadastro() {
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password: senha,
       options: {
@@ -37,7 +37,7 @@ export default function CadastroPage() {
       return
     }
 
-    alert('Conta criada com sucesso! Faça login.')
+    alert('Conta criada com sucesso!')
     router.push('/login')
   }
 
@@ -45,10 +45,11 @@ export default function CadastroPage() {
     <div style={styles.container}>
       
       {/* LOGO */}
-      <div style={styles.logoContainer}>
+      <div style={styles.logoWrapper}>
         <div style={styles.logoCircle}>
-          ✂️
+          <div style={styles.logoInner} />
         </div>
+
         <h1 style={styles.title}>Organiza Salão</h1>
         <p style={styles.subtitle}>Seu negócio, organizado</p>
       </div>
@@ -103,7 +104,7 @@ const styles = {
     padding: 24,
   },
 
-  logoContainer: {
+  logoWrapper: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
@@ -118,13 +119,21 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: 36,
     marginBottom: 12,
   },
 
+  // símbolo interno (O estilizado)
+  logoInner: {
+    width: 32,
+    height: 32,
+    border: '3px solid black',
+    borderRadius: '50%',
+    position: 'relative' as const,
+  },
+
   title: {
-    fontSize: 24,
-    fontWeight: 600,
+    fontSize: 26,
+    fontWeight: 700,
     margin: 0,
   },
 
