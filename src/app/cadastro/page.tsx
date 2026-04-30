@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
 
-const supabase = createBrowserClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
@@ -14,167 +14,160 @@ export default function CadastroPage() {
 
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [erro, setErro] = useState<string | null>(null)
+  const [senha, setSenha] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const handleCadastro = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErro(null)
+  async function handleCadastro() {
     setLoading(true)
 
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            nome,
-            tipo: 'profissional'
-          }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password: senha,
+      options: {
+        data: {
+          nome,
+          role: 'profissional'
         }
-      })
-
-      if (error) {
-        setErro(error.message)
-        return
       }
+    })
 
-      if (!data.user) {
-        setErro('Erro ao criar usuário')
-        return
-      }
-
-      // redireciona para login
-      router.push('/login')
-
-    } catch (err) {
-      setErro('Erro inesperado ao criar conta')
-    } finally {
+    if (error) {
+      alert(error.message)
       setLoading(false)
+      return
     }
+
+    alert('Conta criada com sucesso! Faça login.')
+    router.push('/login')
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f5f5f5, #eaeaea)'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 380,
-        background: '#fff',
-        padding: 28,
-        borderRadius: 16,
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-      }}>
+    <div style={styles.container}>
+      
+      {/* LOGO */}
+      <div style={styles.logoContainer}>
+        <div style={styles.logoCircle}>
+          ✂️
+        </div>
+        <h1 style={styles.title}>Organiza Salão</h1>
+        <p style={styles.subtitle}>Seu negócio, organizado</p>
+      </div>
 
-        <h1 style={{ textAlign: 'center', marginBottom: 8 }}>
-          Criar conta
-        </h1>
+      {/* FORM */}
+      <div style={styles.form}>
+        <input
+          placeholder="Seu nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          style={styles.input}
+        />
 
-        <p style={{
-          textAlign: 'center',
-          color: '#666',
-          marginBottom: 20,
-          fontSize: 14
-        }}>
-          Cadastre-se para acessar o sistema
-        </p>
+        <input
+          placeholder="Seu email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
 
-        <form
-          onSubmit={handleCadastro}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14
-          }}
-        >
-          <input
-            type="text"
-            placeholder="Seu nome"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            required
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #ddd',
-              fontSize: 14
-            }}
-          />
+        <input
+          placeholder="Senha"
+          type="password"
+          value={senha}
+          onChange={(e) => setSenha(e.target.value)}
+          style={styles.input}
+        />
 
-          <input
-            type="email"
-            placeholder="Seu email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #ddd',
-              fontSize: 14
-            }}
-          />
+        <button onClick={handleCadastro} style={styles.button}>
+          {loading ? 'Criando...' : 'Criar conta'}
+        </button>
 
-          <input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #ddd',
-              fontSize: 14
-            }}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: 'none',
-              background: '#000',
-              color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginTop: 6
-            }}
-          >
-            {loading ? 'Criando...' : 'Criar conta'}
-          </button>
-
-          {erro && (
-            <p style={{
-              color: 'red',
-              textAlign: 'center',
-              fontSize: 13
-            }}>
-              {erro}
-            </p>
-          )}
-        </form>
-
-        <p style={{
-          textAlign: 'center',
-          marginTop: 18,
-          fontSize: 14
-        }}>
+        <p style={styles.linkText}>
           Já tem conta?{' '}
-          <a href="/login" style={{ color: '#000', fontWeight: 600 }}>
+          <span onClick={() => router.push('/login')} style={styles.link}>
             Entrar
-          </a>
+          </span>
         </p>
-
       </div>
     </div>
   )
+}
+
+const styles = {
+  container: {
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 24,
+  },
+
+  logoContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+
+  logoCircle: {
+    width: 90,
+    height: 90,
+    borderRadius: '50%',
+    border: '3px solid black',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 36,
+    marginBottom: 12,
+  },
+
+  title: {
+    fontSize: 24,
+    fontWeight: 600,
+    margin: 0,
+  },
+
+  subtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+
+  form: {
+    width: '100%',
+    maxWidth: 340,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 12,
+  },
+
+  input: {
+    padding: 12,
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    fontSize: 16,
+  },
+
+  button: {
+    padding: 14,
+    backgroundColor: 'black',
+    color: 'white',
+    border: 'none',
+    borderRadius: 8,
+    fontSize: 16,
+    cursor: 'pointer',
+  },
+
+  linkText: {
+    fontSize: 14,
+    textAlign: 'center' as const,
+    marginTop: 10,
+  },
+
+  link: {
+    cursor: 'pointer',
+    fontWeight: 500,
+    textDecoration: 'underline',
+  },
 }
