@@ -25,16 +25,17 @@ export default function AdminUsuariosPage() {
   const [busca, setBusca] = useState('')
   const [filtro, setFiltro] = useState<'todos' | 'pendentes' | 'aprovados'>('pendentes')
 
-  // 🔥 CORREÇÃO AQUI
   useEffect(() => {
     if (loading) return
 
+    // 🔥 usuário não logado
     if (!profile) {
       router.push('/login')
       return
     }
 
-    if (profile.role !== 'admin_central') {
+    // 🔥 TIPAGEM CORRIGIDA (sem erro TS)
+    if ((profile.role as string) !== 'admin_central') {
       router.push('/dashboard')
       return
     }
@@ -90,8 +91,8 @@ export default function AdminUsuariosPage() {
 
   const usuariosFiltrados = usuarios.filter(u => {
     const matchBusca =
-      u.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      u.email.toLowerCase().includes(busca.toLowerCase())
+      u.nome?.toLowerCase().includes(busca.toLowerCase()) ||
+      u.email?.toLowerCase().includes(busca.toLowerCase())
 
     const matchFiltro =
       filtro === 'todos'
@@ -103,7 +104,6 @@ export default function AdminUsuariosPage() {
     return matchBusca && matchFiltro
   })
 
-  // 🔥 evita tela quebrando antes de validar
   if (loading || !profile) {
     return <p className="p-4">Carregando...</p>
   }
@@ -195,7 +195,6 @@ export default function AdminUsuariosPage() {
                 </div>
               </div>
 
-              {/* AÇÕES */}
               {!u.aprovado && (
                 <div className="flex gap-2">
                   <button
