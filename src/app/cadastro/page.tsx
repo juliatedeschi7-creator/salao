@@ -20,13 +20,13 @@ export default function CadastroPage() {
   async function handleCadastro() {
     setLoading(true)
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password: senha,
       options: {
         data: {
           nome,
-          role: 'profissional'
+          tipo: 'profissional'
         }
       }
     })
@@ -37,7 +37,7 @@ export default function CadastroPage() {
       return
     }
 
-    alert('Conta criada com sucesso!')
+    alert('Conta criada! Aguarde aprovação.')
     router.push('/login')
   }
 
@@ -45,138 +45,80 @@ export default function CadastroPage() {
     <div style={styles.container}>
       
       {/* LOGO */}
-      <div style={styles.logoWrapper}>
-        <div style={styles.logoCircle}>
-          <div style={styles.logoInner} />
-        </div>
+      <img src="/logo.png" style={styles.logo} />
 
-        <h1 style={styles.title}>Organiza Salão</h1>
-        <p style={styles.subtitle}>Seu negócio, organizado</p>
-      </div>
+      <h1 style={styles.title}>Organiza Salão</h1>
+      <p style={styles.subtitle}>
+        Menos bagunça. Mais controle. Mais lucro.
+      </p>
 
-      {/* FORM */}
-      <div style={styles.form}>
-        <input
-          placeholder="Seu nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
-          style={styles.input}
-        />
+      <input
+        placeholder="Seu nome"
+        value={nome}
+        onChange={(e) => setNome(e.target.value)}
+        style={styles.input}
+      />
 
-        <input
-          placeholder="Seu email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={styles.input}
-        />
+      <input
+        placeholder="Seu email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        style={styles.input}
+      />
 
-        <input
-          placeholder="Senha"
-          type="password"
-          value={senha}
-          onChange={(e) => setSenha(e.target.value)}
-          style={styles.input}
-        />
+      <input
+        placeholder="Senha"
+        type="password"
+        value={senha}
+        onChange={(e) => setSenha(e.target.value)}
+        style={styles.input}
+      />
 
-        <button onClick={handleCadastro} style={styles.button}>
-          {loading ? 'Criando...' : 'Criar conta'}
-        </button>
+      <button onClick={handleCadastro} style={styles.button}>
+        {loading ? 'Criando...' : 'Criar conta'}
+      </button>
 
-        <p style={styles.linkText}>
-          Já tem conta?{' '}
-          <span onClick={() => router.push('/login')} style={styles.link}>
-            Entrar
-          </span>
-        </p>
-      </div>
+      <p style={{ marginTop: 20 }}>
+        Já tem conta? <a href="/login">Entrar</a>
+      </p>
     </div>
   )
 }
 
 const styles = {
   container: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    padding: 24,
-  },
-
-  logoWrapper: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    marginBottom: 32,
-  },
-
-  logoCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: '50%',
-    border: '3px solid black',
-    display: 'flex',
-    alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    height: '100vh',
+    background: '#fff'
   },
-
-  // símbolo interno (O estilizado)
-  logoInner: {
-    width: 32,
-    height: 32,
-    border: '3px solid black',
-    borderRadius: '50%',
-    position: 'relative' as const,
+  logo: {
+    width: 120,
+    marginBottom: 20
   },
-
   title: {
-    fontSize: 26,
-    fontWeight: 700,
-    margin: 0,
+    fontSize: 28,
+    fontWeight: 700
   },
-
   subtitle: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
+    marginBottom: 30,
+    color: '#666'
   },
-
-  form: {
-    width: '100%',
-    maxWidth: 340,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: 12,
-  },
-
   input: {
+    width: 280,
     padding: 12,
+    marginBottom: 10,
     border: '1px solid #ccc',
-    borderRadius: 8,
-    fontSize: 16,
+    borderRadius: 8
   },
-
   button: {
-    padding: 14,
-    backgroundColor: 'black',
-    color: 'white',
-    border: 'none',
+    width: 280,
+    padding: 12,
+    background: '#000',
+    color: '#fff',
     borderRadius: 8,
-    fontSize: 16,
-    cursor: 'pointer',
-  },
-
-  linkText: {
-    fontSize: 14,
-    textAlign: 'center' as const,
-    marginTop: 10,
-  },
-
-  link: {
-    cursor: 'pointer',
-    fontWeight: 500,
-    textDecoration: 'underline',
-  },
+    border: 'none'
+  }
 }
