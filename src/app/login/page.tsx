@@ -1,177 +1,176 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
-
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { supabase } from '@/lib/supabase'
+import { Eye, EyeOff, Mail, Lock, Scissors } from 'lucide-react'
 
 export default function LoginPage() {
-  const router = useRouter()
-
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [erro, setErro] = useState<string | null>(null)
+  const [senha, setSenha] = useState('')
+  const [mostrarSenha, setMostrarSenha] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErro(null)
+  async function handleLogin() {
+    if (!email || !senha) { setErro('Preencha email e senha.'); return }
     setLoading(true)
+    setErro('')
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: senha,
+    })
 
-      if (error) {
-        setErro('Email ou senha inválidos')
+    if (error) {
+      setErro('Email ou senha incorretos.')
+      setLoading(false)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, aprovado, ativo, salao_id')
+      .eq('id', data.user.id)
+      .single()
+
+    if (!profile) {
+      setErro('Perfil não encontrado.')
+      setLoading(false)
+      return
+    }
+
+    if (!profile.ativo) {
+      await supabase.auth.signOut()
+      setErro('Sua conta foi desativada. Entre em contato com o suporte.')
+      setLoading(false)
+      return
+    }
+
+    if (profile.role === 'admin_geral') {
+      window.location.href = '/admin'
+      return
+    }
+
+    if (!profile.aprovado) {
+      await supabase.auth.signOut()
+      setErro('Sua conta ainda aguarda aprovação do administrador.')
+      setLoading(false)
+      return
+    }
+
+    if (profile.role === 'dono_salao') {
+      if (!profile.salao_id) {
+        window.location.href = '/criar-salao'
         return
       }
-
-      const user = data.user
-
-      if (!user) {
-        setErro('Erro ao obter usuário')
-        return
-      }
-
-      const { data: perfil, error: erroPerfil } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+      const { data: salao } = await supabase
+        .from('saloes')
+        .select('pausado, aprovado')
+        .eq('id', profile.salao_id)
         .single()
 
-      if (erroPerfil || !perfil) {
-        setErro('Perfil não encontrado')
+      if (salao?.pausado) {
+        await supabase.auth.signOut()
+        setErro('Seu salão está pausado. Entre em contato com o administrador.')
+        setLoading(false)
         return
       }
-
-      if (!perfil.aprovado) {
-        setErro('Seu cadastro está aguardando aprovação')
+      if (!salao?.aprovado) {
+        await supabase.auth.signOut()
+        setErro('Seu salão ainda aguarda aprovação do administrador.')
+        setLoading(false)
         return
       }
-
-      router.push('/salao')
-
-    } catch (err) {
-      setErro('Erro inesperado ao entrar')
-    } finally {
-      setLoading(false)
+      window.location.href = '/salao'
+      return
     }
+
+    if (profile.role === 'funcionario') {
+      window.location.href = '/funcionario'
+      return
+    }
+
+    window.location.href = '/cliente'
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f5f5f5, #eaeaea)'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 380,
-        background: '#fff',
-        padding: 28,
-        borderRadius: 16,
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
-      }}>
-        
-        <h1 style={{
-          textAlign: 'center',
-          marginBottom: 8
-        }}>
-          Entrar
-        </h1>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Topo decorativo */}
+      <div className="bg-gray-900 px-6 pt-16 pb-12 flex flex-col items-center">
+        <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-4">
+          <Scissors size={30} className="text-gray-900" />
+        </div>
+        <h1 className="text-white text-2xl font-bold">Organiza Salão</h1>
+        <p className="text-gray-400 text-sm mt-1">Bem-vinda de volta ✨</p>
+      </div>
 
-        <p style={{
-          textAlign: 'center',
-          color: '#666',
-          marginBottom: 20,
-          fontSize: 14
-        }}>
-          Acesse sua conta do salão
+      {/* Formulário */}
+      <div className="flex-1 px-6 py-8 flex flex-col gap-4 max-w-sm mx-auto w-full">
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email</label>
+          <div className="relative">
+            <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              className="input-field pl-11"
+              type="email"
+              placeholder="seuemail@exemplo.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Senha</label>
+          <div className="relative">
+            <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              className="input-field pl-11 pr-12"
+              type={mostrarSenha ? 'text' : 'password'}
+              placeholder="Digite sua senha"
+              value={senha}
+              onChange={e => setSenha(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+            />
+            <button
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+              onClick={() => setMostrarSenha(!mostrarSenha)}>
+              {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <div className="text-right mt-1">
+            <span className="text-gray-500 text-sm cursor-pointer">Esqueceu sua senha?</span>
+          </div>
+        </div>
+
+        {erro && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+            <p className="text-red-600 text-sm text-center">{erro}</p>
+          </div>
+        )}
+
+        <button className="btn-primary mt-2" onClick={handleLogin} disabled={loading}>
+          {loading
+            ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            : 'Entrar'}
+        </button>
+
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-gray-400 text-sm">ou</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
+
+        <p className="text-center text-gray-600 text-sm">
+          Não tem uma conta?{' '}
+          <a href="/cadastro" className="text-gray-900 font-bold underline">Criar conta</a>
         </p>
 
-        <form
-          onSubmit={handleLogin}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14
-          }}
-        >
-          <input
-            type="email"
-            placeholder="Seu email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #ddd',
-              fontSize: 14
-            }}
-          />
-
-          <input
-            type="password"
-            placeholder="Sua senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: '1px solid #ddd',
-              fontSize: 14
-            }}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: 12,
-              borderRadius: 10,
-              border: 'none',
-              background: '#000',
-              color: '#fff',
-              fontWeight: 600,
-              cursor: 'pointer',
-              marginTop: 6
-            }}
-          >
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-
-          {erro && (
-            <p style={{
-              color: 'red',
-              textAlign: 'center',
-              fontSize: 13
-            }}>
-              {erro}
-            </p>
-          )}
-        </form>
-
-        <p style={{
-          textAlign: 'center',
-          marginTop: 18,
-          fontSize: 14
-        }}>
-          Não tem conta?{' '}
-          <a href="/cadastro" style={{ color: '#000', fontWeight: 600 }}>
-            Criar conta
-          </a>
-        </p>
+        <a href="/cadastro?tipo=salao"
+          className="btn-secondary text-center">
+          🏪 Seja um salão parceiro
+        </a>
       </div>
     </div>
   )
