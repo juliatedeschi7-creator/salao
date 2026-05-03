@@ -1,19 +1,45 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Eye, EyeOff, Mail, Lock, Scissors } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { profile, loading } = useAuth()
+
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const [loadingLogin, setLoadingLogin] = useState(false)
   const [erro, setErro] = useState('')
 
+  // 🔥 REDIRECIONA SE JÁ ESTIVER LOGADO (SEM LOOP)
+  useEffect(() => {
+    if (loading) return
+
+    if (profile) {
+      if (profile.role === 'admin_central') {
+        router.replace('/admin')
+      } else if (profile.role === 'dono_salao') {
+        router.replace('/salao')
+      } else if (profile.role === 'funcionario') {
+        router.replace('/funcionario')
+      } else {
+        router.replace('/cliente')
+      }
+    }
+  }, [profile, loading])
+
   async function handleLogin() {
-    if (!email || !senha) { setErro('Preencha email e senha.'); return }
-    setLoading(true)
+    if (!email || !senha) {
+      setErro('Preencha email e senha.')
+      return
+    }
+
+    setLoadingLogin(true)
     setErro('')
 
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -23,7 +49,7 @@ export default function LoginPage() {
 
     if (error) {
       setErro('Email ou senha incorretos.')
-      setLoading(false)
+      setLoadingLogin(false)
       return
     }
 
@@ -35,34 +61,35 @@ export default function LoginPage() {
 
     if (!profile) {
       setErro('Perfil não encontrado.')
-      setLoading(false)
+      setLoadingLogin(false)
       return
     }
 
     if (!profile.ativo) {
       await supabase.auth.signOut()
-      setErro('Sua conta foi desativada. Entre em contato com o suporte.')
-      setLoading(false)
+      setErro('Conta desativada.')
+      setLoadingLogin(false)
       return
     }
 
-    if (profile.role === 'admin_geral') {
-      window.location.href = '/admin'
+    if (profile.role === 'admin_central') {
+      router.replace('/admin')
       return
     }
 
     if (!profile.aprovado) {
       await supabase.auth.signOut()
-      setErro('Sua conta ainda aguarda aprovação do administrador.')
-      setLoading(false)
+      setErro('Aguardando aprovação.')
+      setLoadingLogin(false)
       return
     }
 
     if (profile.role === 'dono_salao') {
       if (!profile.salao_id) {
-        window.location.href = '/criar-salao'
+        router.replace('/criar-salao')
         return
       }
+
       const { data: salao } = await supabase
         .from('saloes')
         .select('pausado, aprovado')
@@ -71,31 +98,32 @@ export default function LoginPage() {
 
       if (salao?.pausado) {
         await supabase.auth.signOut()
-        setErro('Seu salão está pausado. Entre em contato com o administrador.')
-        setLoading(false)
+        setErro('Salão pausado.')
+        setLoadingLogin(false)
         return
       }
+
       if (!salao?.aprovado) {
         await supabase.auth.signOut()
-        setErro('Seu salão ainda aguarda aprovação do administrador.')
-        setLoading(false)
+        setErro('Salão não aprovado.')
+        setLoadingLogin(false)
         return
       }
-      window.location.href = '/salao'
+
+      router.replace('/salao')
       return
     }
 
     if (profile.role === 'funcionario') {
-      window.location.href = '/funcionario'
+      router.replace('/funcionario')
       return
     }
 
-    window.location.href = '/cliente'
+    router.replace('/cliente')
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Topo decorativo */}
       <div className="bg-gray-900 px-6 pt-16 pb-12 flex flex-col items-center">
         <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center mb-4">
           <Scissors size={30} className="text-gray-900" />
@@ -104,73 +132,48 @@ export default function LoginPage() {
         <p className="text-gray-400 text-sm mt-1">Bem-vinda de volta ✨</p>
       </div>
 
-      {/* Formulário */}
       <div className="flex-1 px-6 py-8 flex flex-col gap-4 max-w-sm mx-auto w-full">
+
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email</label>
-          <div className="relative">
+          <label className="text-sm font-medium text-gray-700">Email</label>
+          <div className="relative mt-1">
             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               className="input-field pl-11"
               type="email"
-              placeholder="seuemail@exemplo.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
           </div>
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Senha</label>
-          <div className="relative">
+          <label className="text-sm font-medium text-gray-700">Senha</label>
+          <div className="relative mt-1">
             <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               className="input-field pl-11 pr-12"
               type={mostrarSenha ? 'text' : 'password'}
-              placeholder="Digite sua senha"
               value={senha}
               onChange={e => setSenha(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
-              onClick={() => setMostrarSenha(!mostrarSenha)}>
+              className="absolute right-4 top-1/2 -translate-y-1/2"
+              onClick={() => setMostrarSenha(!mostrarSenha)}
+            >
               {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
-          </div>
-          <div className="text-right mt-1">
-            <span className="text-gray-500 text-sm cursor-pointer">Esqueceu sua senha?</span>
           </div>
         </div>
 
         {erro && (
-          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-            <p className="text-red-600 text-sm text-center">{erro}</p>
-          </div>
+          <div className="text-red-500 text-sm text-center">{erro}</div>
         )}
 
-        <button className="btn-primary mt-2" onClick={handleLogin} disabled={loading}>
-          {loading
-            ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : 'Entrar'}
+        <button className="btn-primary" onClick={handleLogin} disabled={loadingLogin}>
+          {loadingLogin ? 'Entrando...' : 'Entrar'}
         </button>
 
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-gray-400 text-sm">ou</span>
-          <div className="flex-1 h-px bg-gray-200" />
-        </div>
-
-        <p className="text-center text-gray-600 text-sm">
-          Não tem uma conta?{' '}
-          <a href="/cadastro" className="text-gray-900 font-bold underline">Criar conta</a>
-        </p>
-
-        <a href="/cadastro?tipo=salao"
-          className="btn-secondary text-center">
-          🏪 Seja um salão parceiro
-        </a>
       </div>
     </div>
   )
