@@ -9,28 +9,39 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Primeiro verifica sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let mounted = true
+
+    async function loadSession() {
+      const { data: { session } } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
       if (session?.user) {
-        getProfile(session.user.id)
+        await getProfile(session.user.id)
       } else {
         setLoading(false)
       }
-    })
+    }
 
-    // Escuta mudanças de auth
+    loadSession()
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session?.user) {
+      async (_event, session) => {
+        if (!mounted) return
+
+        if (session?.user) {
           await getProfile(session.user.id)
-        } else if (event === 'SIGNED_OUT') {
+        } else {
           setProfile(null)
           setLoading(false)
         }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function getProfile(userId: string) {
@@ -40,6 +51,7 @@ export function useAuth() {
         .select('*')
         .eq('id', userId)
         .single()
+
       setProfile(data)
     } catch {
       setProfile(null)
@@ -53,5 +65,13 @@ export function useAuth() {
     window.location.href = '/login'
   }
 
-  return { profile, loading, logout, recarregar: () => supabase.auth.getUser().then(({ data }) => data.user && getProfile(data.user.id)) }
+  return {
+    profile,
+    loading,
+    logout,
+    recarregar: async () => {
+      const { data } = await supabase.auth.getUser()
+      if (data.user) await getProfile(data.user.id)
+    }
+  }
 }
